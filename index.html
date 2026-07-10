@@ -16,23 +16,31 @@
         .logo-preview { max-height: 80px; max-width: 180px; object-fit: contain; }
         .badge-ean { background-color: #e2e8f0; color: #4a5568; font-family: monospace; font-size: 0.85em; }
         
-        /* Pantalla de Login */
-        #login-screen {
+        /* --- CONTROL DE PANTALLAS ESTRICTO --- */
+        /* Por defecto, todo oculto excepto la pantalla de carga */
+        #app-content, #login-screen { display: none !important; }
+
+        /* Pantalla de carga activa por defecto */
+        #loading-screen {
+            position: fixed; top:0; left:0; width:100vw; height:100vh; background:#fff; z-index:9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        /* Estilos cuando Firebase decide qué mostrar */
+        .mostrar-login {
+            display: flex !important;
             min-height: 100vh;
-            display: flex;
             align-items: center;
             justify-content: center;
             background: linear-gradient(135deg, #00324d 0%, #39a900 100%);
         }
+        .mostrar-app {
+            display: block !important;
+        }
+
         .login-card { max-width: 400px; width: 100%; border-radius: 15px; padding: 30px; text-align: center; background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .btn-google { background-color: #ffffff; color: #757575; border: 1px solid #ddd; font-weight: bold; transition: all 0.3s; }
         .btn-google:hover { background-color: #f1f1f1; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-
-        /* Spinner de carga */
-        #loading-screen {
-            position: fixed; top:0; left:0; width:100vw; height:100vh; background:#fff; z-index:9999;
-            display:flex; flex-direction:column; align-items:center; justify-content:center;
-        }
 
         @media print {
             body * { visibility: hidden; }
@@ -46,10 +54,10 @@
 
 <div id="loading-screen">
     <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;"></div>
-    <p class="mt-3 text-secondary fw-semibold">Conectando con Firebase...</p>
+    <p class="mt-3 text-secondary fw-semibold">Verificando sesión en Firebase...</p>
 </div>
 
-<div id="login-screen" class="d-none">
+<div id="login-screen">
     <div class="login-card">
         <i class="fa-solid fa-file-invoice-dollar text-success mb-3" style="font-size: 4rem;"></i>
         <h3 class="mb-2 fw-bold text-dark">SENA Presupuestos</h3>
@@ -61,7 +69,7 @@
     </div>
 </div>
 
-<div id="app-content" class="d-none">
+<div id="app-content">
     <nav class="navbar navbar-expand-lg navbar-dark mb-4 d-print-none">
         <div class="container">
             <a class="navbar-brand" href="#"><i class="fa-solid fa-file-invoice-dollar me-2"></i>SENA Presupuestos</a>
@@ -399,32 +407,45 @@
         return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val);
     };
 
-    // --- MANEJO DE VISTAS Y AUTENTICACIÓN ---
+    // --- MANEJO DE VISTAS Y AUTENTICACIÓN REESTRUCTURADO ---
     const loadingScreen = document.getElementById('loading-screen');
     const loginScreen = document.getElementById('login-screen');
     const appContent = document.getElementById('app-content');
 
     onAuthStateChanged(auth, (user) => {
-        loadingScreen.classList.add('d-none');
+        // Ocultar siempre la pantalla de carga al recibir respuesta de Firebase
+        loadingScreen.style.display = 'none';
+
         if (user) {
             currentUser = user;
-            loginScreen.classList.add('d-none');
-            appContent.classList.remove('d-none');
+            
+            // Gestionar clases CSS dinámicamente
+            loginScreen.classList.remove('mostrar-login');
+            appContent.classList.add('mostrar-app');
+
             document.getElementById('user-display-name').innerText = `Hola, ${user.displayName}`;
             escucharDatosFirebase(user.uid);
         } else {
             currentUser = null;
-            appContent.classList.add('d-none');
-            loginScreen.classList.remove('d-none');
+            
+            // Forzar vista de Login si no hay usuario autenticado
+            appContent.classList.remove('mostrar-app');
+            loginScreen.classList.add('mostrar-login');
         }
     });
 
     document.getElementById('btn-login-google').addEventListener('click', () => {
-        signInWithPopup(auth, provider).catch(err => alert("Error de Login: " + err.message));
+        signInWithPopup(auth, provider).catch(err => {
+            alert("Error de Login: " + err.message);
+            console.error(err);
+        });
     });
 
     document.getElementById('btn-logout').addEventListener('click', () => {
-        signOut(auth).then(() => limpiarPresupuestoActual());
+        signOut(auth).then(() => {
+            limpiarPresupuestoActual();
+            window.location.reload(); // Recarga limpia para reiniciar estados de interfaz
+        });
     });
 
     // --- SINCRONIZACIÓN EN TIEMPO REAL CON FIRESTORE ---
@@ -522,3 +543,169 @@
     };
 
     window.eliminarClienteMaestro = async function(idFirestore) {
+        if(confirm('¿Eliminar cliente de Firebase?')) {
+            await deleteDoc(doc(db, "usuarios", currentUser.uid, "clientes", idFirestore));
+        }
+    };
+
+    // --- INTERFAZ GRÁFICA Y CONTROL DE FLUJO ---
+    function cargarCamposConfiguracionForm() {
+        document.getElementById('emp-nit').value = bdEmpresa.nit || '';
+        document.getElementById('emp-nombre').value = bdEmpresa.nombre || '';
+        document.getElementById('emp-direccion').value = bdEmpresa.direccion || '';
+        document.getElementById('emp-cp').value = bdEmpresa.cp || '';
+        document.getElementById('emp-ciudad').value = bdEmpresa.ciudad || '';
+        document.getElementById('emp-telefono').value = bdEmpresa.telefono || '';
+        document.getElementById('emp-email').value = bdEmpresa.email || '';
+        document.getElementById('emp-notes').value = bdEmpresa.notas || '';
+        if(bdEmpresa.logo) {
+            document.getElementById('emp-logo-preview-modal').src = bdEmpresa.logo;
+            document.getElementById('emp-logo-preview-modal').classList.remove('d-none');
+        }
+    }
+
+    function actualizarVistaEmpresa() {
+        document.getElementById('view-emp-nombre').innerText = bdEmpresa.nombre || 'NUESTRA EMPRESA';
+        document.getElementById('view-emp-nit').innerText = bdEmpresa.nit || '-';
+        document.getElementById('view-emp-contacto').innerText = `${bdEmpresa.direccion || ''} ${bdEmpresa.ciudad ? '- ' + bdEmpresa.ciudad : ''} ${bdEmpresa.telefono ? '| Tel: ' + bdEmpresa.telefono : ''}`;
+        document.getElementById('view-emp-email').innerText = bdEmpresa.email || '';
+        document.getElementById('view-emp-notes').innerText = bdEmpresa.notas || 'Sin términos específicos.';
+        
+        const logoCont = document.getElementById('view-emp-logo-container');
+        if(bdEmpresa.logo) {
+            document.getElementById('view-emp-logo').src = bdEmpresa.logo;
+            logoCont.classList.remove('d-none');
+        } else {
+            logoCont.classList.add('d-none');
+        }
+    }
+
+    function actualizarTablasMaestras() {
+        const tInv = document.getElementById('tabla-inventario-completo');
+        tInv.innerHTML = '';
+        bdInventario.forEach((item) => {
+            tInv.innerHTML += `<tr><td><span class="badge badge-ean">${item.ean}</span></td><td><strong>${item.nombre}</strong></td><td class="text-end">${formatearMoneda(item.precio)}</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="eliminarArticuloInventario('${item.idFirestore}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+        });
+
+        const tCli = document.getElementById('tabla-clientes-completa');
+        tCli.innerHTML = '';
+        bdClientes.forEach((cli) => {
+            tCli.innerHTML += `<tr><td>${cli.nit}</td><td><strong>${cli.nombre}</strong></td><td>${cli.direccion} (${cli.ciudad})</td><td>${cli.telefono}</td><td><small>${cli.email}</small></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="eliminarClienteMaestro('${cli.idFirestore}')"><i class="fa-solid fa-trash"></i></button></td></tr>`;
+        });
+    }
+
+    // --- BUSCADOR INTERNO ---
+    document.getElementById('search-cliente').addEventListener('input', () => {
+        const query = document.getElementById('search-cliente').value.toLowerCase().trim();
+        const lista = document.getElementById('lista-busqueda-clientes');
+        lista.innerHTML = '';
+        if(!query) return;
+
+        bdClientes.filter(c => c.nombre.toLowerCase().includes(query) || c.nit.toLowerCase().includes(query)).forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'list-group-item list-group-item-action small py-2';
+            btn.innerHTML = `<i class="fa-solid fa-user me-2 text-muted"></i><strong>${c.nombre}</strong> (${c.nit})`;
+            btn.onclick = () => {
+                clienteSeleccionado = c;
+                document.getElementById('search-cliente').value = '';
+                lista.innerHTML = '';
+                
+                document.getElementById('cliente-seleccionado-info').classList.remove('d-none');
+                document.getElementById('sel-cli-nombre').innerText = c.nombre;
+                document.getElementById('sel-cli-detalles').innerText = `NIT: ${c.nit} | Tel: ${c.telefono}`;
+
+                document.getElementById('view-cli-nombre').innerText = c.nombre;
+                document.getElementById('view-cli-nit').innerText = c.nit;
+                document.getElementById('view-cli-direccion').innerText = `${c.direccion}, ${c.ciudad}`;
+                document.getElementById('view-cli-contacto').innerText = `Tel: ${c.telefono} | Email: ${c.email}`;
+            };
+            lista.appendChild(btn);
+        });
+    });
+
+    window.deseleccionarCliente = function() {
+        clienteSeleccionado = null;
+        document.getElementById('cliente-seleccionado-info').classList.add('d-none');
+        document.getElementById('view-cli-nombre').innerText = 'No seleccionado';
+        document.getElementById('view-cli-nit').innerText = '-';
+        document.getElementById('view-cli-direccion').innerText = '-';
+        document.getElementById('view-cli-contacto').innerText = '-';
+    };
+
+    document.getElementById('search-articulo').addEventListener('input', () => {
+        const query = document.getElementById('search-articulo').value.toLowerCase().trim();
+        const lista = document.getElementById('lista-busqueda-articulos');
+        lista.innerHTML = '';
+        if(!query) return;
+
+        bdInventario.filter(a => a.nombre.toLowerCase().includes(query) || a.ean.toLowerCase().includes(query)).forEach(a => {
+            const btn = document.createElement('button');
+            btn.className = 'list-group-item list-group-item-action small py-2';
+            btn.innerHTML = `<span class="badge badge-ean me-2">${a.ean}</span> <strong>${a.nombre}</strong> - ${formatearMoneda(a.precio)}`;
+            btn.onclick = () => {
+                articuloTemporalSeleccionado = a;
+                document.getElementById('search-articulo').value = '';
+                lista.innerHTML = '';
+
+                document.getElementById('articulo-seleccionado-form').classList.remove('d-none');
+                document.getElementById('form-art-ean').innerText = `EAN: ${a.ean}`;
+                document.getElementById('form-art-nombre').innerText = a.nombre;
+                document.getElementById('form-art-precio').value = a.precio;
+                document.getElementById('form-art-cantidad').value = 1;
+            };
+            lista.appendChild(btn);
+        });
+    });
+
+    window.agregarArticuloAPresupuesto = function() {
+        if(!articuloTemporalSeleccionado) return;
+        articulosPresupuesto.push({
+            idUnico: Date.now(),
+            ean: articuloTemporalSeleccionado.ean,
+            nombre: articuloTemporalSeleccionado.nombre,
+            precio: parseFloat(document.getElementById('form-art-precio').value) || 0,
+            cantidad: parseInt(document.getElementById('form-art-cantidad').value) || 1
+        });
+        document.getElementById('articulo-seleccionado-form').classList.add('d-none');
+        articuloTemporalSeleccionado = null;
+        renderizarTablaPresupuesto();
+    };
+
+    window.eliminarArticuloDePresupuesto = function(idUnico) {
+        articulosPresupuesto = articulosPresupuesto.filter(item => item.idUnico !== idUnico);
+        renderizarTablaPresupuesto();
+    };
+
+    function renderizarTablaPresupuesto() {
+        const tbody = document.getElementById('tabla-presupuesto-articulos');
+        tbody.innerHTML = '';
+        if(articulosPresupuesto.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No se han añadido artículos al presupuesto.</td></tr>`;
+            document.getElementById('total-subtotal').innerText = '$0';
+            document.getElementById('total-iva').innerText = '$0';
+            document.getElementById('total-general').innerText = '$0';
+            return;
+        }
+
+        let subtotal = 0;
+        articulosPresupuesto.forEach(item => {
+            const totalFila = item.precio * item.cantidad;
+            subtotal += totalFila;
+            tbody.innerHTML += `<tr><td><span class="badge badge-ean">${item.ean}</span></td><td><strong>${item.nombre}</strong></td><td class="text-end">${item.cantidad}</td><td class="text-end">${formatearMoneda(item.precio)}</td><td class="text-end fw-semibold">${formatearMoneda(totalFila)}</td><td class="text-center d-print-none"><button class="btn btn-sm btn-link text-danger p-0" onclick="eliminarArticuloDePresupuesto(${item.idUnico})"><i class="fa-solid fa-circle-xmark"></i></button></td></tr>`;
+        });
+
+        const iva = subtotal * 0.19;
+        const total = subtotal + iva;
+        document.getElementById('total-subtotal').innerText = formatearMoneda(subtotal);
+        document.getElementById('total-iva').innerText = formatearMoneda(iva);
+        document.getElementById('total-general').innerText = formatearMoneda(total);
+    }
+
+    window.limpiarPresupuestoActual = function() {
+        articulosPresupuesto = [];
+        deseleccionarCliente();
+        renderizarTablaPresupuesto();
+    };
+</script>
+</body>
+</html>
