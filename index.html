@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Presupuestos, Inventario y Firebase</title>
+    <title>Sistema de Presupuestos e Inventario - SENA</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .navbar { background-color: #2c3e50; }
-        .navbar-brand { color: #fff !important; }
+        .navbar { background-color: #39a900; } /* Verde SENA */
+        .navbar-brand { color: #fff !important; font-weight: bold; }
         .card { border: none; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .card-header { background-color: #fff; border-bottom: 1px solid #eef2f5; font-weight: bold; color: #34495e; }
         .preview-factura { background: #fff; border: 1px solid #e1e8ed; padding: 40px; border-radius: 12px; position: relative; }
@@ -22,7 +22,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(135deg, #00324d 0%, #39a900 100%);
         }
         .login-card { max-width: 400px; width: 100%; border-radius: 15px; padding: 30px; text-align: center; background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .btn-google { background-color: #ffffff; color: #757575; border: 1px solid #ddd; font-weight: bold; transition: all 0.3s; }
@@ -45,14 +45,14 @@
 <body>
 
 <div id="loading-screen">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-    <p class="mt-3 text-secondary fw-semibold">Cargando aplicación...</p>
+    <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;"></div>
+    <p class="mt-3 text-secondary fw-semibold">Conectando con Firebase...</p>
 </div>
 
 <div id="login-screen" class="d-none">
     <div class="login-card">
-        <i class="fa-solid fa-file-invoice-dollar text-primary mb-3" style="font-size: 4rem;"></i>
-        <h3 class="mb-2 fw-bold text-dark">Presupuestos Pro</h3>
+        <i class="fa-solid fa-file-invoice-dollar text-success mb-3" style="font-size: 4rem;"></i>
+        <h3 class="mb-2 fw-bold text-dark">SENA Presupuestos</h3>
         <p class="text-muted small mb-4">Gestiona tu inventario, clientes y cotizaciones de forma segura en la nube.</p>
         <button id="btn-login-google" class="btn btn-google w-100 py-2 d-flex align-items-center justify-content-center">
             <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google Logo" class="me-2" style="width:20px;">
@@ -64,7 +64,7 @@
 <div id="app-content" class="d-none">
     <nav class="navbar navbar-expand-lg navbar-dark mb-4 d-print-none">
         <div class="container">
-            <a class="navbar-brand" href="#"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Presupuestos Pro</a>
+            <a class="navbar-brand" href="#"><i class="fa-solid fa-file-invoice-dollar me-2"></i>SENA Presupuestos</a>
             <div class="ms-auto d-flex align-items-center">
                 <span id="user-display-name" class="text-light small me-3 fw-semibold"></span>
                 <button class="btn btn-sm btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#modalConfig" title="Configuración de la Empresa">
@@ -89,7 +89,6 @@
         </ul>
 
         <div class="tab-content">
-            
             <div class="tab-pane fade show active" id="pane-presupuesto">
                 <div class="row">
                     <div class="col-lg-5">
@@ -113,7 +112,7 @@
                         </div>
 
                         <div class="card">
-                            <div class="card-header"><i class="fa-solid fa-cart-plus me-2 text-success"></i>2. Añadir Artículos al Presupuesto</div>
+                            <div class="card-header"><i class="fa-solid fa-cart-plus me-2 text-success"></i>2. Añadir Artículos</div>
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label small">Buscar Artículo (Descripción o EAN)</label>
@@ -143,7 +142,6 @@
                                 </div>
                             </div>
                         </div>
-                        
                         <button class="btn btn-outline-danger w-100 mb-3" onclick="limpiarPresupuestoActual()"><i class="fa-solid fa-trash-can me-2"></i>Vaciar Presupuesto Actual</button>
                     </div>
 
@@ -157,9 +155,9 @@
                             <div class="row mb-4 border-bottom pb-3 align-items-center">
                                 <div class="col-7">
                                     <div id="view-emp-logo-container" class="mb-2 d-none">
-                                        <img id="view-emp-logo" src="" class="logo-preview" alt="Logo de la Empresa">
+                                        <img id="view-emp-logo" src="" class="logo-preview" alt="Logo">
                                     </div>
-                                    <h3 id="view-emp-nombre" class="text-uppercase m-0 text-primary" style="font-weight: 700;">Nuestra Empresa</h3>
+                                    <h3 id="view-emp-nombre" class="text-uppercase m-0 text-success" style="font-weight: 700;">Nuestra Empresa</h3>
                                     <p class="text-muted small mb-1">NIT: <span id="view-emp-nit">-</span></p>
                                     <p class="small mb-0 text-secondary" id="view-emp-contacto"></p>
                                     <p class="small mb-0 text-secondary" id="view-emp-email"></p>
@@ -211,7 +209,7 @@
                                         </tr>
                                         <tr class="border-top table-active">
                                             <td><h5 class="m-0 fw-bold text-dark">Total:</h5></td>
-                                            <td class="text-end"><h5 class="m-0 fw-bold text-primary" id="total-general">$0</h5></td>
+                                            <td class="text-end"><h5 class="m-0 fw-bold text-success" id="total-general">$0</h5></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -219,7 +217,7 @@
 
                             <div class="mt-5 pt-3 border-top">
                                 <h6 class="fw-bold text-secondary mb-1">Términos, Condiciones y Garantías:</h6>
-                                <p class="small text-muted mb-0" style="white-space: pre-wrap;" id="view-emp-notas">Las notas configuradas se cargarán de forma automática aquí.</p>
+                                <p class="small text-muted mb-0" style="white-space: pre-wrap;" id="view-emp-notas">Las notas de la empresa aparecerán aquí.</p>
                             </div>
                         </div>
                     </div>
@@ -229,7 +227,7 @@
             <div class="tab-pane fade" id="pane-inventario">
                 <div class="card">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-boxes-stacked text-success me-2"></i>Catálogo / Inventario en la Nube</span>
+                        <span><i class="fa-solid fa-boxes-stacked text-success me-2"></i>Inventario en la Nube (Firestore)</span>
                         <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalNuevoArticulo"><i class="fa-solid fa-plus me-1"></i>Nuevo Artículo</button>
                     </div>
                     <div class="card-body">
@@ -253,7 +251,7 @@
             <div class="tab-pane fade" id="pane-clientes">
                 <div class="card">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <span><i class="fa-solid fa-users text-primary me-2"></i>Directorio de Clientes en la Nube</span>
+                        <span><i class="fa-solid fa-users text-primary me-2"></i>Directorio de Clientes (Firestore)</span>
                         <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente"><i class="fa-solid fa-user-plus me-1"></i>Nuevo Cliente</button>
                     </div>
                     <div class="card-body">
@@ -263,7 +261,7 @@
                                     <tr>
                                         <th>NIT / CC</th>
                                         <th>Nombre Completo</th>
-                                        <th>Dirección / Ciudad</th>
+                                        <th>Dirección</th>
                                         <th>Teléfono</th>
                                         <th>Email</th>
                                         <th class="text-center" style="width: 100px;">Acciones</th>
@@ -275,7 +273,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -284,19 +281,244 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="fa-solid fa-gears text-secondary me-2"></i>Configuración de Nuestra Empresa</h5>
+                <h5 class="modal-title"><i class="fa-solid fa-gears text-secondary me-2"></i>Configuración de Empresa</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="form-config-empresa">
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6"><label class="form-label small fw-bold">NIT</label><input type="text" id="emp-nit" class="form-control" required></div>
-                        <div class="col-md-6"><label class="form-label small fw-bold">Nombre Completo / Razón Social</label><input type="text" id="emp-nombre" class="form-control" required></div>
-                        <div class="col-md-6"><label class="form-label small fw-bold">Dirección de la Empresa</label><input type="text" id="emp-direccion" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Nombre / Razón Social</label><input type="text" id="emp-nombre" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Dirección</label><input type="text" id="emp-direccion" class="form-control" required></div>
                         <div class="col-md-3"><label class="form-label small fw-bold">Código Postal</label><input type="text" id="emp-cp" class="form-control"></div>
                         <div class="col-md-3"><label class="form-label small fw-bold">Ciudad</label><input type="text" id="emp-ciudad" class="form-control" required></div>
-                        <div class="col-md-6"><label class="form-label small fw-bold">Teléfono de Contacto</label><input type="tel" id="emp-telefono" class="form-control" required></div>
-                        <div class="col-md-6"><label class="form-label small fw-bold">Email Corporativo</label><input type="email" id="emp-email" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Teléfono</label><input type="tel" id="emp-telefono" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Email</label><input type="email" id="emp-email" class="form-control" required></div>
                         <div class="col-12">
-                            <label class="form-label small fw-bold">Logo de la Empresa</label>
-                            <input type="
+                            <label class="form-label small fw-bold">Logo de Empresa (Imagen)</label>
+                            <input type="file" id="emp-logo-input" class="form-control" accept="image/*">
+                            <div class="mt-2 text-center bg-light p-2 rounded">
+                                <img id="emp-logo-preview-modal" src="" class="logo-preview d-none" alt="Preview">
+                            </div>
+                        </div>
+                        <div class="col-12"><label class="form-label small fw-bold">Notas / Garantías del Presupuesto</label><textarea id="emp-notes" class="form-control" rows="4"></textarea></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn btn-success">Guardar en Firebase</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevoArticulo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-box text-success me-2"></i>Registrar Artículo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="form-nuevo-articulo">
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label small fw-bold">Código EAN</label><input type="text" id="inv-ean" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label small fw-bold">Descripción / Nombre</label><input type="text" id="inv-nombre" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label small fw-bold">Precio Unitario ($)</label><input type="number" id="inv-precio" class="form-control" min="0" step="any" required></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalNuevoCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-user-plus text-primary me-2"></i>Registrar Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="form-nuevo-cliente">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label small fw-bold">NIT / CC</label><input type="text" id="cli-nit" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Nombre Completo</label><input type="text" id="cli-nombre" class="form-control" required></div>
+                        <div class="col-md-12"><label class="form-label small fw-bold">Dirección</label><input type="text" id="cli-direccion" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Código Postal</label><input type="text" id="cli-cp" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Ciudad</label><input type="text" id="cli-ciudad" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Teléfono</label><input type="tel" id="cli-telefono" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Email</label><input type="email" id="cli-email" class="form-control" required></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, collection, addDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Tu configuración exacta proporcionada
+    const firebaseConfig = {
+        apiKey: "AIzaSyCCmIzT12WIIREUXl5AZrHhbeCKe7Vdgy4",
+        authDomain: "sena-presupuesto.firebaseapp.com",
+        projectId: "sena-presupuesto",
+        storageBucket: "sena-presupuesto.firebasestorage.app",
+        messagingSenderId: "1096932595467",
+        appId: "1:1096932595467:web:af096f3979162fd01ef40e",
+        measurementId: "G-8JBHR68MPJ"
+    };
+
+    // Inicializar app e infraestructuras
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // Estados reactivos locales
+    let currentUser = null;
+    let bdEmpresa = {};
+    let bdInventario = [];
+    let bdClientes = [];
+    let articulosPresupuesto = [];
+    let clienteSeleccionado = null;
+    let articuloTemporalSeleccionado = null;
+
+    // Formateador de moneda colombiana (COP)
+    const formatearMoneda = (val) => {
+        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val);
+    };
+
+    // --- MANEJO DE VISTAS Y AUTENTICACIÓN ---
+    const loadingScreen = document.getElementById('loading-screen');
+    const loginScreen = document.getElementById('login-screen');
+    const appContent = document.getElementById('app-content');
+
+    onAuthStateChanged(auth, (user) => {
+        loadingScreen.classList.add('d-none');
+        if (user) {
+            currentUser = user;
+            loginScreen.classList.add('d-none');
+            appContent.classList.remove('d-none');
+            document.getElementById('user-display-name').innerText = `Hola, ${user.displayName}`;
+            escucharDatosFirebase(user.uid);
+        } else {
+            currentUser = null;
+            appContent.classList.add('d-none');
+            loginScreen.classList.remove('d-none');
+        }
+    });
+
+    document.getElementById('btn-login-google').addEventListener('click', () => {
+        signInWithPopup(auth, provider).catch(err => alert("Error de Login: " + err.message));
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', () => {
+        signOut(auth).then(() => limpiarPresupuestoActual());
+    });
+
+    // --- SINCRONIZACIÓN EN TIEMPO REAL CON FIRESTORE ---
+    function escucharDatosFirebase(uid) {
+        document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
+
+        // Empresa
+        onSnapshot(doc(db, "usuarios", uid, "config", "empresa"), (snapshot) => {
+            if (snapshot.exists()) {
+                bdEmpresa = snapshot.data();
+                cargarCamposConfiguracionForm();
+                actualizarVistaEmpresa();
+            } else {
+                bdEmpresa = {};
+                actualizarVistaEmpresa();
+            }
+        });
+
+        // Inventario
+        onSnapshot(collection(db, "usuarios", uid, "inventario"), (snapshot) => {
+            bdInventario = [];
+            snapshot.forEach(doc => bdInventario.push({ idFirestore: doc.id, ...doc.data() }));
+            actualizarTablasMaestras();
+        });
+
+        // Clientes
+        onSnapshot(collection(db, "usuarios", uid, "clientes"), (snapshot) => {
+            bdClientes = [];
+            snapshot.forEach(doc => bdClientes.push({ idFirestore: doc.id, ...doc.data() }));
+            actualizarTablasMaestras();
+        });
+    }
+
+    // --- ACCIONES GUARDAR / ELIMINAR ---
+    document.getElementById('form-config-empresa').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentUser) return;
+        await setDoc(doc(db, "usuarios", currentUser.uid, "config", "empresa"), {
+            nit: document.getElementById('emp-nit').value,
+            nombre: document.getElementById('emp-nombre').value,
+            direccion: document.getElementById('emp-direccion').value,
+            cp: document.getElementById('emp-cp').value,
+            ciudad: document.getElementById('emp-ciudad').value,
+            telefono: document.getElementById('emp-telefono').value,
+            email: document.getElementById('emp-email').value,
+            notas: document.getElementById('emp-notes').value,
+            logo: bdEmpresa.logo || ""
+        });
+        bootstrap.Modal.getInstance(document.getElementById('modalConfig')).hide();
+    });
+
+    document.getElementById('emp-logo-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                bdEmpresa.logo = event.target.result;
+                document.getElementById('emp-logo-preview-modal').src = event.target.result;
+                document.getElementById('emp-logo-preview-modal').classList.remove('d-none');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById('form-nuevo-articulo').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await addDoc(collection(db, "usuarios", currentUser.uid, "inventario"), {
+            ean: document.getElementById('inv-ean').value.trim(),
+            nombre: document.getElementById('inv-nombre').value.trim(),
+            precio: parseFloat(document.getElementById('inv-precio').value)
+        });
+        document.getElementById('form-nuevo-articulo').reset();
+        bootstrap.Modal.getInstance(document.getElementById('modalNuevoArticulo')).hide();
+    });
+
+    document.getElementById('form-nuevo-cliente').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await addDoc(collection(db, "usuarios", currentUser.uid, "clientes"), {
+            nit: document.getElementById('cli-nit').value.trim(),
+            nombre: document.getElementById('cli-nombre').value.trim(),
+            direccion: document.getElementById('cli-direccion').value.trim(),
+            cp: document.getElementById('cli-cp').value.trim(),
+            ciudad: document.getElementById('cli-ciudad').value.trim(),
+            telefono: document.getElementById('cli-telefono').value.trim(),
+            email: document.getElementById('cli-email').value.trim()
+        });
+        document.getElementById('form-nuevo-cliente').reset();
+        bootstrap.Modal.getInstance(document.getElementById('modalNuevoCliente')).hide();
+    });
+
+    window.eliminarArticuloInventario = async function(idFirestore) {
+        if(confirm('¿Eliminar artículo de Firebase?')) {
+            await deleteDoc(doc(db, "usuarios", currentUser.uid, "inventario", idFirestore));
+        }
+    };
+
+    window.eliminarClienteMaestro = async function(idFirestore) {
