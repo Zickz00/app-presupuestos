@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Presupuestos e Inventario</title>
+    <title>Sistema de Presupuestos, Inventario y Firebase</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -16,7 +16,24 @@
         .logo-preview { max-height: 80px; max-width: 180px; object-fit: contain; }
         .badge-ean { background-color: #e2e8f0; color: #4a5568; font-family: monospace; font-size: 0.85em; }
         
-        /* Estilos de Impresión */
+        /* Pantalla de Login */
+        #login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        }
+        .login-card { max-width: 400px; width: 100%; border-radius: 15px; padding: 30px; text-align: center; background: #fff; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .btn-google { background-color: #ffffff; color: #757575; border: 1px solid #ddd; font-weight: bold; transition: all 0.3s; }
+        .btn-google:hover { background-color: #f1f1f1; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        /* Spinner de carga */
+        #loading-screen {
+            position: fixed; top:0; left:0; width:100vw; height:100vh; background:#fff; z-index:9999;
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+        }
+
         @media print {
             body * { visibility: hidden; }
             #seccion-impresion, #seccion-impresion * { visibility: visible; }
@@ -27,220 +44,239 @@
 </head>
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark mb-4 d-print-none">
-    <div class="container">
-        <a class="navbar-brand" href="#"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Presupuestos Pro</a>
-        <div class="ms-auto d-flex align-items-center">
-            <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#modalConfig" title="Configuración de la Empresa">
-                <i class="fa-solid fa-gear me-1"></i> Configuración Empresa
-            </button>
-        </div>
+<div id="loading-screen">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+    <p class="mt-3 text-secondary fw-semibold">Cargando aplicación...</p>
+</div>
+
+<div id="login-screen" class="d-none">
+    <div class="login-card">
+        <i class="fa-solid fa-file-invoice-dollar text-primary mb-3" style="font-size: 4rem;"></i>
+        <h3 class="mb-2 fw-bold text-dark">Presupuestos Pro</h3>
+        <p class="text-muted small mb-4">Gestiona tu inventario, clientes y cotizaciones de forma segura en la nube.</p>
+        <button id="btn-login-google" class="btn btn-google w-100 py-2 d-flex align-items-center justify-content-center">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google Logo" class="me-2" style="width:20px;">
+            Iniciar sesión con Google
+        </button>
     </div>
-</nav>
+</div>
 
-<div class="container mb-5 d-print-none">
-    <ul class="nav nav-pills mb-4 justify-content-center" id="mainTabs" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active px-4 fw-semibold" id="tab-presupuesto" data-bs-toggle="tab" data-bs-target="#pane-presupuesto" type="button"><i class="fa-solid fa-calculator me-2"></i>Crear Presupuesto</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link px-4 fw-semibold" id="tab-inventario" data-bs-toggle="tab" data-bs-target="#pane-inventario" type="button"><i class="fa-solid fa-boxes-stacked me-2"></i>Inventario de Artículos</button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link px-4 fw-semibold" id="tab-clientes" data-bs-toggle="tab" data-bs-target="#pane-clientes" type="button"><i class="fa-solid fa-users me-2"></i>Base de Clientes</button>
-        </li>
-    </ul>
+<div id="app-content" class="d-none">
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4 d-print-none">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fa-solid fa-file-invoice-dollar me-2"></i>Presupuestos Pro</a>
+            <div class="ms-auto d-flex align-items-center">
+                <span id="user-display-name" class="text-light small me-3 fw-semibold"></span>
+                <button class="btn btn-sm btn-outline-light me-2" data-bs-toggle="modal" data-bs-target="#modalConfig" title="Configuración de la Empresa">
+                    <i class="fa-solid fa-gear me-1"></i> Configuración Empresa
+                </button>
+                <button id="btn-logout" class="btn btn-sm btn-danger"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+            </div>
+        </div>
+    </nav>
 
-    <div class="tab-content">
-        
-        <div class="tab-pane fade show active" id="pane-presupuesto">
-            <div class="row">
-                <div class="col-lg-5">
-                    <div class="card">
-                        <div class="card-header"><i class="fa-solid fa-user-check me-2 text-primary"></i>1. Cliente del Presupuesto</div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label small">Buscar Cliente (Nombre o NIT)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                    <input type="text" id="search-cliente" class="form-control" placeholder="Escriba para buscar...">
+    <div class="container mb-5 d-print-none">
+        <ul class="nav nav-pills mb-4 justify-content-center" id="mainTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active px-4 fw-semibold" id="tab-presupuesto" data-bs-toggle="tab" data-bs-target="#pane-presupuesto" type="button"><i class="fa-solid fa-calculator me-2"></i>Crear Presupuesto</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link px-4 fw-semibold" id="tab-inventario" data-bs-toggle="tab" data-bs-target="#pane-inventario" type="button"><i class="fa-solid fa-boxes-stacked me-2"></i>Inventario de Artículos</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link px-4 fw-semibold" id="tab-clientes" data-bs-toggle="tab" data-bs-target="#pane-clientes" type="button"><i class="fa-solid fa-users me-2"></i>Base de Clientes</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            
+            <div class="tab-pane fade show active" id="pane-presupuesto">
+                <div class="row">
+                    <div class="col-lg-5">
+                        <div class="card">
+                            <div class="card-header"><i class="fa-solid fa-user-check me-2 text-primary"></i>1. Cliente del Presupuesto</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label small">Buscar Cliente (Nombre o NIT)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                        <input type="text" id="search-cliente" class="form-control" placeholder="Escriba para buscar...">
+                                    </div>
+                                    <div id="lista-busqueda-clientes" class="list-group mt-2" style="max-height: 150px; overflow-y: auto;"></div>
                                 </div>
-                                <div id="lista-busqueda-clientes" class="list-group mt-2" style="max-height: 150px; overflow-y: auto;"></div>
-                            </div>
-                            <div id="cliente-seleccionado-info" class="p-3 bg-light rounded d-none">
-                                <h6 class="mb-1 text-dark" id="sel-cli-nombre"></h6>
-                                <p class="small text-muted mb-0" id="sel-cli-detalles"></p>
-                                <button class="btn btn-sm btn-link text-danger p-0 mt-2" onclick="deseleccionarCliente()">Cambiar cliente</button>
+                                <div id="cliente-seleccionado-info" class="p-3 bg-light rounded d-none">
+                                    <h6 class="mb-1 text-dark" id="sel-cli-nombre"></h6>
+                                    <p class="small text-muted mb-0" id="sel-cli-detalles"></p>
+                                    <button class="btn btn-sm btn-link text-danger p-0 mt-2" onclick="deseleccionarCliente()">Cambiar cliente</button>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="card">
+                            <div class="card-header"><i class="fa-solid fa-cart-plus me-2 text-success"></i>2. Añadir Artículos al Presupuesto</div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label small">Buscar Artículo (Descripción o EAN)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="fa-solid fa-barcode"></i></span>
+                                        <input type="text" id="search-articulo" class="form-control" placeholder="Escriba descripción o código EAN...">
+                                    </div>
+                                    <div id="lista-busqueda-articulos" class="list-group mt-2" style="max-height: 180px; overflow-y: auto;"></div>
+                                </div>
+                                
+                                <div id="articulo-seleccionado-form" class="p-3 bg-light rounded d-none">
+                                    <span class="badge badge-ean mb-1" id="form-art-ean"></span>
+                                    <h6 id="form-art-nombre" class="mb-2"></h6>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-6">
+                                            <label class="form-label small">Precio ($)</label>
+                                            <input type="number" id="form-art-precio" class="form-control form-control-sm" step="any">
+                                        </div>
+                                        <div class="col-3">
+                                            <label class="form-label small">Cant.</label>
+                                            <input type="number" id="form-art-cantidad" class="form-control form-control-sm" value="1" min="1">
+                                        </div>
+                                        <div class="col-3">
+                                            <button class="btn btn-success btn-sm w-100" onclick="agregarArticuloAPresupuesto()"><i class="fa-solid fa-plus"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-outline-danger w-100 mb-3" onclick="limpiarPresupuestoActual()"><i class="fa-solid fa-trash-can me-2"></i>Vaciar Presupuesto Actual</button>
                     </div>
 
-                    <div class="card">
-                        <div class="card-header"><i class="fa-solid fa-cart-plus me-2 text-success"></i>2. Añadir Artículos al Presupuesto</div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label small">Buscar Artículo (Descripción o EAN)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="fa-solid fa-barcode"></i></span>
-                                    <input type="text" id="search-articulo" class="form-control" placeholder="Escriba descripción o código EAN...">
-                                </div>
-                                <div id="lista-busqueda-articulos" class="list-group mt-2" style="max-height: 180px; overflow-y: auto;"></div>
-                            </div>
-                            
-                            <div id="articulo-seleccionado-form" class="p-3 bg-light rounded d-none">
-                                <span class="badge badge-ean mb-1" id="form-art-ean"></span>
-                                <h6 id="form-art-nombre" class="mb-2"></h6>
-                                <div class="row g-2 align-items-end">
-                                    <div class="col-6">
-                                        <label class="form-label small">Precio ($)</label>
-                                        <input type="number" id="form-art-precio" class="form-control form-control-sm" step="any">
-                                    </div>
-                                    <div class="col-3">
-                                        <label class="form-label small">Cant.</label>
-                                        <input type="number" id="form-art-cantidad" class="form-control form-control-sm" value="1" min="1">
-                                    </div>
-                                    <div class="col-3">
-                                        <button class="btn btn-success btn-sm w-100" onclick="agregarArticuloAPresupuesto()"><i class="fa-solid fa-plus"></i></button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button class="btn btn-outline-danger w-100 mb-3" onclick="limpiarPresupuestoActual()"><i class="fa-solid fa-trash-can me-2"></i>Vaciar Presupuesto Actual</button>
-                </div>
-
-                <div class="col-lg-7">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="m-0 text-secondary"><i class="fa-solid fa-eye me-2"></i>Vista Previa</h5>
-                        <button class="btn btn-dark btn-sm" onclick="window.print()"><i class="fa-solid fa-print me-2"></i>Imprimir o Guardar PDF</button>
-                    </div>
-
-                    <div class="preview-factura shadow-sm" id="seccion-impresion">
-                        <div class="row mb-4 border-bottom pb-3 align-items-center">
-                            <div class="col-7">
-                                <div id="view-emp-logo-container" class="mb-2 d-none">
-                                    <img id="view-emp-logo" src="" class="logo-preview" alt="Logo de la Empresa">
-                                </div>
-                                <h3 id="view-emp-nombre" class="text-uppercase m-0 text-primary" style="font-weight: 700;">Nuestra Empresa</h3>
-                                <p class="text-muted small mb-1">NIT: <span id="view-emp-nit">-</span></p>
-                                <p class="small mb-0 text-secondary" id="view-emp-contacto"></p>
-                                <p class="small mb-0 text-secondary" id="view-emp-email"></p>
-                            </div>
-                            <div class="col-5 text-end">
-                                <h2 class="text-secondary m-0 fw-bold">PRESUPUESTO</h2>
-                                <p class="small text-muted mt-2 mb-0">Fecha: <span id="fecha-actual"></span></p>
-                            </div>
+                    <div class="col-lg-7">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="m-0 text-secondary"><i class="fa-solid fa-eye me-2"></i>Vista Previa</h5>
+                            <button class="btn btn-dark btn-sm" onclick="window.print()"><i class="fa-solid fa-print me-2"></i>Imprimir o Guardar PDF</button>
                         </div>
 
-                        <div class="row mb-4 bg-light p-3 rounded mx-0">
-                            <div class="col-12">
-                                <h6 class="text-uppercase text-secondary border-bottom pb-1 mb-2 small fw-bold">Datos del Cliente</h6>
-                                <p class="mb-1"><strong>Nombre:</strong> <span id="view-cli-nombre">No seleccionado</span></p>
-                                <p class="mb-1"><strong>NIT / CC:</strong> <span id="view-cli-nit">-</span></p>
-                                <p class="mb-1"><strong>Dirección:</strong> <span id="view-cli-direccion">-</span></p>
-                                <p class="mb-0"><strong>Contacto:</strong> <span id="view-cli-contacto">-</span></p>
+                        <div class="preview-factura shadow-sm" id="seccion-impresion">
+                            <div class="row mb-4 border-bottom pb-3 align-items-center">
+                                <div class="col-7">
+                                    <div id="view-emp-logo-container" class="mb-2 d-none">
+                                        <img id="view-emp-logo" src="" class="logo-preview" alt="Logo de la Empresa">
+                                    </div>
+                                    <h3 id="view-emp-nombre" class="text-uppercase m-0 text-primary" style="font-weight: 700;">Nuestra Empresa</h3>
+                                    <p class="text-muted small mb-1">NIT: <span id="view-emp-nit">-</span></p>
+                                    <p class="small mb-0 text-secondary" id="view-emp-contacto"></p>
+                                    <p class="small mb-0 text-secondary" id="view-emp-email"></p>
+                                </div>
+                                <div class="col-5 text-end">
+                                    <h2 class="text-secondary m-0 fw-bold">PRESUPUESTO</h2>
+                                    <p class="small text-muted mt-2 mb-0">Fecha: <span id="fecha-actual"></span></p>
+                                </div>
                             </div>
-                        </div>
 
-                        <table class="table table-striped align-middle">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>Código EAN</th>
-                                    <th>Descripción Artículo</th>
-                                    <th class="text-end" style="width: 80px;">Cant.</th>
-                                    <th class="text-end">Precio Unit.</th>
-                                    <th class="text-end">Total</th>
-                                    <th class="text-center d-print-none" style="width: 40px;"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-presupuesto-articulos">
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No se han añadido artículos al presupuesto.</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                            <div class="row mb-4 bg-light p-3 rounded mx-0">
+                                <div class="col-12">
+                                    <h6 class="text-uppercase text-secondary border-bottom pb-1 mb-2 small fw-bold">Datos del Cliente</h6>
+                                    <p class="mb-1"><strong>Nombre:</strong> <span id="view-cli-nombre">No seleccionado</span></p>
+                                    <p class="mb-1"><strong>NIT / CC:</strong> <span id="view-cli-nit">-</span></p>
+                                    <p class="mb-1"><strong>Dirección:</strong> <span id="view-cli-direccion">-</span></p>
+                                    <p class="mb-0"><strong>Contacto:</strong> <span id="view-cli-contacto">-</span></p>
+                                </div>
+                            </div>
 
-                        <div class="row justify-content-end mt-4">
-                            <div class="col-6">
-                                <table class="table table-sm table-borderless m-0">
+                            <table class="table table-striped align-middle">
+                                <thead class="table-dark">
                                     <tr>
-                                        <td class="text-secondary">Subtotal:</td>
-                                        <td class="text-end fw-semibold" id="total-subtotal">$0</td>
+                                        <th>Código EAN</th>
+                                        <th>Descripción Artículo</th>
+                                        <th class="text-end" style="width: 80px;">Cant.</th>
+                                        <th class="text-end">Precio Unit.</th>
+                                        <th class="text-end">Total</th>
+                                        <th class="text-center d-print-none" style="width: 40px;"></th>
                                     </tr>
+                                </thead>
+                                <tbody id="tabla-presupuesto-articulos">
                                     <tr>
-                                        <td class="text-secondary">IVA (19%):</td>
-                                        <td class="text-end fw-semibold" id="total-iva">$0</td>
+                                        <td colspan="6" class="text-center text-muted py-4">No se han añadido artículos al presupuesto.</td>
                                     </tr>
-                                    <tr class="border-top table-active">
-                                        <td><h5 class="m-0 fw-bold text-dark">Total:</h5></td>
-                                        <td class="text-end"><h5 class="m-0 fw-bold text-primary" id="total-general">$0</h5></td>
-                                    </tr>
-                                </table>
+                                </tbody>
+                            </table>
+
+                            <div class="row justify-content-end mt-4">
+                                <div class="col-6">
+                                    <table class="table table-sm table-borderless m-0">
+                                        <tr>
+                                            <td class="text-secondary">Subtotal:</td>
+                                            <td class="text-end fw-semibold" id="total-subtotal">$0</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-secondary">IVA (19%):</td>
+                                            <td class="text-end fw-semibold" id="total-iva">$0</td>
+                                        </tr>
+                                        <tr class="border-top table-active">
+                                            <td><h5 class="m-0 fw-bold text-dark">Total:</h5></td>
+                                            <td class="text-end"><h5 class="m-0 fw-bold text-primary" id="total-general">$0</h5></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 pt-3 border-top">
+                                <h6 class="fw-bold text-secondary mb-1">Términos, Condiciones y Garantías:</h6>
+                                <p class="small text-muted mb-0" style="white-space: pre-wrap;" id="view-emp-notas">Las notas configuradas se cargarán de forma automática aquí.</p>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="mt-5 pt-3 border-top">
-                            <h6 class="fw-bold text-secondary mb-1">Términos, Condiciones y Garantías:</h6>
-                            <p class="small text-muted mb-0" style="white-space: pre-wrap;" id="view-emp-notas">Las notas configuradas se cargarán de forma automática aquí.</p>
+            <div class="tab-pane fade" id="pane-inventario">
+                <div class="card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-boxes-stacked text-success me-2"></i>Catálogo / Inventario en la Nube</span>
+                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalNuevoArticulo"><i class="fa-solid fa-plus me-1"></i>Nuevo Artículo</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Código EAN</th>
+                                        <th>Descripción / Artículo</th>
+                                        <th class="text-end">Precio Base ($)</th>
+                                        <th class="text-center" style="width: 100px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-inventario-completo"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="tab-pane fade" id="pane-inventario">
-            <div class="card">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <span><i class="fa-solid fa-boxes-stacked text-success me-2"></i>Catálogo / Inventario de Artículos</span>
-                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalNuevoArticulo"><i class="fa-solid fa-plus me-1"></i>Nuevo Artículo</button>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Código EAN</th>
-                                    <th>Descripción / Artículo</th>
-                                    <th class="text-end">Precio Base ($)</th>
-                                    <th class="text-center" style="width: 100px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-inventario-completo">
-                                </tbody>
-                        </table>
+            <div class="tab-pane fade" id="pane-clientes">
+                <div class="card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span><i class="fa-solid fa-users text-primary me-2"></i>Directorio de Clientes en la Nube</span>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente"><i class="fa-solid fa-user-plus me-1"></i>Nuevo Cliente</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>NIT / CC</th>
+                                        <th>Nombre Completo</th>
+                                        <th>Dirección / Ciudad</th>
+                                        <th>Teléfono</th>
+                                        <th>Email</th>
+                                        <th class="text-center" style="width: 100px;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla-clientes-completa"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="tab-pane fade" id="pane-clientes">
-            <div class="card">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <span><i class="fa-solid fa-users text-primary me-2"></i>Directorio de Clientes</span>
-                    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente"><i class="fa-solid fa-user-plus me-1"></i>Nuevo Cliente</button>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>NIT / CC</th>
-                                    <th>Nombre Completo</th>
-                                    <th>Dirección / Ciudad</th>
-                                    <th>Teléfono</th>
-                                    <th>Email</th>
-                                    <th class="text-center" style="width: 100px;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabla-clientes-completa">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
         </div>
-
     </div>
 </div>
 
@@ -254,417 +290,13 @@
             <form id="form-config-empresa">
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">NIT</label>
-                            <input type="text" id="emp-nit" class="form-control" placeholder="900.000.000-1" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Nombre Completo / Razón Social</label>
-                            <input type="text" id="emp-nombre" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Dirección de la Empresa</label>
-                            <input type="text" id="emp-direccion" class="form-control" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold">Código Postal</label>
-                            <input type="text" id="emp-cp" class="form-control">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold">Ciudad</label>
-                            <input type="text" id="emp-ciudad" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Teléfono de Contacto</label>
-                            <input type="tel" id="emp-telefono" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Email Corporativo</label>
-                            <input type="email" id="emp-email" class="form-control" required>
-                        </div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">NIT</label><input type="text" id="emp-nit" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Nombre Completo / Razón Social</label><input type="text" id="emp-nombre" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Dirección de la Empresa</label><input type="text" id="emp-direccion" class="form-control" required></div>
+                        <div class="col-md-3"><label class="form-label small fw-bold">Código Postal</label><input type="text" id="emp-cp" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label small fw-bold">Ciudad</label><input type="text" id="emp-ciudad" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Teléfono de Contacto</label><input type="tel" id="emp-telefono" class="form-control" required></div>
+                        <div class="col-md-6"><label class="form-label small fw-bold">Email Corporativo</label><input type="email" id="emp-email" class="form-control" required></div>
                         <div class="col-12">
                             <label class="form-label small fw-bold">Logo de la Empresa</label>
-                            <input type="file" id="emp-logo-input" class="form-control" accept="image/*">
-                            <div class="form-text">Sube una imagen para tu logo (se guardará localmente).</div>
-                            <div class="mt-2 text-center bg-light p-2 rounded">
-                                <img id="emp-logo-preview-modal" src="" class="logo-preview d-none" alt="Vista previa">
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">Notas del Presupuesto (Garantía, Exclusiones)</label>
-                            <textarea id="emp-notes" class="form-control" rows="4" placeholder="Ej: Garantía de 12 meses. No cubre mala manipulación."></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="submit" class="btn btn-primary">Guardar Configuración</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalNuevoArticulo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fa-solid fa-box text-success me-2"></i>Registrar Artículo</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="form-nuevo-articulo">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Código EAN</label>
-                        <input type="text" id="inv-ean" class="form-control" placeholder="Ej: 7701234567890" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Descripción del Artículo</label>
-                        <input type="text" id="inv-nombre" class="form-control" placeholder="Ej: Computador Portátil" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Precio Unitario ($)</label>
-                        <input type="number" id="inv-precio" class="form-control" min="0" step="any" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">Guardar en Inventario</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalNuevoCliente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fa-solid fa-user-plus text-primary me-2"></i>Registrar Cliente</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="form-nuevo-cliente">
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">NIT / CC</label>
-                            <input type="text" id="cli-nit" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Nombre Completo</label>
-                            <input type="text" id="cli-nombre" class="form-control" required>
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label small fw-bold">Dirección</label>
-                            <input type="text" id="cli-direccion" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Código Postal</label>
-                            <input type="text" id="cli-cp" class="form-control">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Ciudad</label>
-                            <input type="text" id="cli-ciudad" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Teléfono</label>
-                            <input type="tel" id="cli-telefono" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Email</label>
-                            <input type="email" id="cli-email" class="form-control" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar Cliente</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-    let bdEmpresa = JSON.parse(localStorage.getItem('bd_empresa')) || {};
-    let bdInventario = JSON.parse(localStorage.getItem('bd_inventario')) || [
-        { ean: '7701234567890', nombre: 'Computador Portátil Core i7', precio: 3200000 },
-        { ean: '7709876543210', nombre: 'Monitor Profesional 27"', precio: 950000 }
-    ];
-    let bdClientes = JSON.parse(localStorage.getItem('bd_clientes')) || [
-        { nit: '900.123.456-1', nombre: 'Soluciones Tecnológicas SAS', direccion: 'Calle 100 #15-30', cp: '110111', ciudad: 'Bogotá', telefono: '3157778899', email: 'info@soluciones.com' }
-    ];
-
-    let clienteSeleccionado = null;
-    let articulosPresupuesto = [];
-    let articuloTemporalSeleccionado = null;
-
-    const formatearMoneda = (val) => {
-        return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(val);
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('fecha-actual').innerText = new Date().toLocaleDateString();
-        cargarCamposConfiguracion();
-        actualizarVistaEmpresa();
-        actualizarTablasMaestras();
-
-        document.getElementById('search-cliente').addEventListener('input', filtrarBusquedaClientes);
-        document.getElementById('search-articulo').addEventListener('input', filtrarBusquedaArticulos);
-    });
-
-    function guardarEnLocalStorage(clave, datos) {
-        localStorage.setItem(clave, JSON.stringify(datos));
-    }
-
-    function cargarCamposConfiguracion() {
-        if(bdEmpresa.nombre) {
-            document.getElementById('emp-nit').value = bdEmpresa.nit || '';
-            document.getElementById('emp-nombre').value = bdEmpresa.nombre || '';
-            document.getElementById('emp-direccion').value = bdEmpresa.direccion || '';
-            document.getElementById('emp-cp').value = bdEmpresa.cp || '';
-            document.getElementById('emp-ciudad').value = bdEmpresa.ciudad || '';
-            document.getElementById('emp-telefono').value = bdEmpresa.telefono || '';
-            document.getElementById('emp-email').value = bdEmpresa.email || '';
-            document.getElementById('emp-notes').value = bdEmpresa.notas || '';
-            if(bdEmpresa.logo) {
-                document.getElementById('emp-logo-preview-modal').src = bdEmpresa.logo;
-                document.getElementById('emp-logo-preview-modal').classList.remove('d-none');
-            }
-        }
-    }
-
-    document.getElementById('emp-logo-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                bdEmpresa.logo = event.target.result;
-                document.getElementById('emp-logo-preview-modal').src = event.target.result;
-                document.getElementById('emp-logo-preview-modal').classList.remove('d-none');
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    document.getElementById('form-config-empresa').addEventListener('submit', function(e) {
-        e.preventDefault();
-        bdEmpresa.nit = document.getElementById('emp-nit').value;
-        bdEmpresa.nombre = document.getElementById('emp-nombre').value;
-        bdEmpresa.direccion = document.getElementById('emp-direccion').value;
-        bdEmpresa.cp = document.getElementById('emp-cp').value;
-        bdEmpresa.ciudad = document.getElementById('emp-ciudad').value;
-        bdEmpresa.telefono = document.getElementById('emp-telefono').value;
-        bdEmpresa.email = document.getElementById('emp-email').value;
-        bdEmpresa.notas = document.getElementById('emp-notes').value;
-
-        guardarEnLocalStorage('bd_empresa', bdEmpresa);
-        actualizarVistaEmpresa();
-        bootstrap.Modal.getInstance(document.getElementById('modalConfig')).hide();
-    });
-
-    function actualizarVistaEmpresa() {
-        document.getElementById('view-emp-nombre').innerText = bdEmpresa.nombre || 'NUESTRA EMPRESA';
-        document.getElementById('view-emp-nit').innerText = bdEmpresa.nit || '-';
-        document.getElementById('view-emp-contacto').innerText = `${bdEmpresa.direccion || ''} ${bdEmpresa.ciudad ? '- ' + bdEmpresa.ciudad : ''} ${bdEmpresa.telefono ? '| Tel: ' + bdEmpresa.telefono : ''}`;
-        document.getElementById('view-emp-email').innerText = bdEmpresa.email || '';
-        document.getElementById('view-emp-notas').innerText = bdEmpresa.notas || 'Sin términos o garantías específicas.';
-        
-        const logoCont = document.getElementById('view-emp-logo-container');
-        const viewLogo = document.getElementById('view-emp-logo');
-        if(bdEmpresa.logo) {
-            viewLogo.src = bdEmpresa.logo;
-            logoCont.classList.remove('d-none');
-        } else {
-            logoCont.classList.add('d-none');
-        }
-    }
-
-    document.getElementById('form-nuevo-articulo').addEventListener('submit', function(e) {
-        e.preventDefault();
-        bdInventario.push({
-            ean: document.getElementById('inv-ean').value.trim(),
-            nombre: document.getElementById('inv-nombre').value.trim(),
-            precio: parseFloat(document.getElementById('inv-precio').value)
-        });
-        guardarEnLocalStorage('bd_inventario', bdInventario);
-        actualizarTablasMaestras();
-        document.getElementById('form-nuevo-articulo').reset();
-        bootstrap.Modal.getInstance(document.getElementById('modalNuevoArticulo')).hide();
-    });
-
-    document.getElementById('form-nuevo-cliente').addEventListener('submit', function(e) {
-        e.preventDefault();
-        bdClientes.push({
-            nit: document.getElementById('cli-nit').value.trim(),
-            nombre: document.getElementById('cli-nombre').value.trim(),
-            direccion: document.getElementById('cli-direccion').value.trim(),
-            cp: document.getElementById('cli-cp').value.trim(),
-            ciudad: document.getElementById('cli-ciudad').value.trim(),
-            telefono: document.getElementById('cli-telefono').value.trim(),
-            email: document.getElementById('cli-email').value.trim()
-        });
-        guardarEnLocalStorage('bd_clientes', bdClientes);
-        actualizarTablasMaestras();
-        document.getElementById('form-nuevo-cliente').reset();
-        bootstrap.Modal.getInstance(document.getElementById('modalNuevoCliente')).hide();
-    });
-
-    function eliminarArticuloInventario(index) {
-        if(confirm('¿Eliminar artículo del inventario permanente?')) {
-            bdInventario.splice(index, 1);
-            guardarEnLocalStorage('bd_inventario', bdInventario);
-            actualizarTablasMaestras();
-        }
-    }
-
-    function eliminarClienteMaestro(index) {
-        if(confirm('¿Eliminar cliente del directorio?')) {
-            bdClientes.splice(index, 1);
-            guardarEnLocalStorage('bd_clientes', bdClientes);
-            actualizarTablasMaestras();
-        }
-    }
-
-    function actualizarTablasMaestras() {
-        const tInv = document.getElementById('tabla-inventario-completo');
-        tInv.innerHTML = '';
-        bdInventario.forEach((item, idx) => {
-            tInv.innerHTML += `<tr><td><span class="badge badge-ean">${item.ean}</span></td><td><strong>${item.nombre}</strong></td><td class="text-end text-dark">${formatearMoneda(item.precio)}</td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="eliminarArticuloInventario(${idx})"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-        });
-
-        const tCli = document.getElementById('tabla-clientes-completa');
-        tCli.innerHTML = '';
-        bdClientes.forEach((cli, idx) => {
-            tCli.innerHTML += `<tr><td>${cli.nit}</td><td><strong>${cli.nombre}</strong></td><td>${cli.direccion} (${cli.ciudad})</td><td>${cli.telefono}</td><td><small>${cli.email}</small></td><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="eliminarClienteMaestro(${idx})"><i class="fa-solid fa-trash"></i></button></td></tr>`;
-        });
-    }
-
-    function filtrarBusquedaClientes() {
-        const query = document.getElementById('search-cliente').value.toLowerCase().trim();
-        const lista = document.getElementById('lista-busqueda-clientes');
-        lista.innerHTML = '';
-        if(!query) return;
-
-        bdClientes.filter(c => c.nombre.toLowerCase().includes(query) || c.nit.toLowerCase().includes(query)).forEach(c => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'list-group-item list-group-item-action small py-2';
-            btn.innerHTML = `<i class="fa-solid fa-user me-2 text-muted"></i><strong>${c.nombre}</strong> <span class="text-muted">(${c.nit})</span>`;
-            btn.onclick = () => seleccionarClienteParaPresupuesto(c);
-            lista.appendChild(btn);
-        });
-    }
-
-    function seleccionarClienteParaPresupuesto(cliente) {
-        clienteSeleccionado = cliente;
-        document.getElementById('search-cliente').value = '';
-        document.getElementById('lista-busqueda-clientes').innerHTML = '';
-        
-        document.getElementById('cliente-seleccionado-info').classList.remove('d-none');
-        document.getElementById('sel-cli-nombre').innerText = cliente.nombre;
-        document.getElementById('sel-cli-detalles').innerText = `NIT: ${cliente.nit} | Tel: ${cliente.telefono}`;
-
-        document.getElementById('view-cli-nombre').innerText = cliente.nombre;
-        document.getElementById('view-cli-nit').innerText = cliente.nit;
-        document.getElementById('view-cli-direccion').innerText = `${cliente.direccion}, ${cliente.ciudad}`;
-        document.getElementById('view-cli-contacto').innerText = `Tel: ${cliente.telefono} | Email: ${cliente.email}`;
-    }
-
-    function deseleccionarCliente() {
-        clienteSeleccionado = null;
-        document.getElementById('cliente-seleccionado-info').classList.add('d-none');
-        document.getElementById('view-cli-nombre').innerText = 'No seleccionado';
-        document.getElementById('view-cli-nit').innerText = '-';
-        document.getElementById('view-cli-direccion').innerText = '-';
-        document.getElementById('view-cli-contacto').innerText = '-';
-    }
-
-    function filtrarBusquedaArticulos() {
-        const query = document.getElementById('search-articulo').value.toLowerCase().trim();
-        const lista = document.getElementById('lista-busqueda-articulos');
-        lista.innerHTML = '';
-        if(!query) return;
-
-        bdInventario.filter(a => a.nombre.toLowerCase().includes(query) || a.ean.toLowerCase().includes(query)).forEach(a => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'list-group-item list-group-item-action small py-2';
-            btn.innerHTML = `<span class="badge badge-ean me-2">${a.ean}</span> <strong>${a.nombre}</strong> - <span class="text-success">${formatearMoneda(a.precio)}</span>`;
-            btn.onclick = () => prepararArticuloForm(a);
-            lista.appendChild(btn);
-        });
-    }
-
-    function prepararArticuloForm(articulo) {
-        articuloTemporalSeleccionado = articulo;
-        document.getElementById('search-articulo').value = '';
-        document.getElementById('lista-busqueda-articulos').innerHTML = '';
-
-        document.getElementById('articulo-seleccionado-form').classList.remove('d-none');
-        document.getElementById('form-art-ean').innerText = `EAN: ${articulo.ean}`;
-        document.getElementById('form-art-nombre').innerText = articulo.nombre;
-        document.getElementById('form-art-precio').value = articulo.precio;
-        document.getElementById('form-art-cantidad').value = 1;
-    }
-
-    function agregarArticuloAPresupuesto() {
-        if(!articuloTemporalSeleccionado) return;
-
-        articulosPresupuesto.push({
-            idUnico: Date.now(),
-            ean: articuloTemporalSeleccionado.ean,
-            nombre: articuloTemporalSeleccionado.nombre,
-            precio: parseFloat(document.getElementById('form-art-precio').value) || 0,
-            cantidad: parseInt(document.getElementById('form-art-cantidad').value) || 1
-        });
-
-        document.getElementById('articulo-seleccionado-form').classList.add('d-none');
-        articuloTemporalSeleccionado = null;
-        renderizarTablaPresupuesto();
-    }
-
-    function eliminarArticuloDePresupuesto(idUnico) {
-        articulosPresupuesto = articulosPresupuesto.filter(item => item.idUnico !== idUnico);
-        renderizarTablaPresupuesto();
-    }
-
-    function renderizarTablaPresupuesto() {
-        const tbody = document.getElementById('tabla-presupuesto-articulos');
-        tbody.innerHTML = '';
-
-        if(articulosPresupuesto.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">No se han añadido artículos al presupuesto.</td></tr>`;
-            document.getElementById('total-subtotal').innerText = '$0';
-            document.getElementById('total-iva').innerText = '$0';
-            document.getElementById('total-general').innerText = '$0';
-            return;
-        }
-
-        let subtotal = 0;
-        articulosPresupuesto.forEach(item => {
-            const totalFila = item.precio * item.cantidad;
-            subtotal += totalFila;
-            tbody.innerHTML += `<tr><td><span class="badge badge-ean">${item.ean}</span></td><td><strong>${item.nombre}</strong></td><td class="text-end">${item.cantidad}</td><td class="text-end">${formatearMoneda(item.precio)}</td><td class="text-end fw-semibold">${formatearMoneda(totalFila)}</td><td class="text-center d-print-none"><button class="btn btn-sm btn-link text-danger p-0" onclick="eliminarArticuloDePresupuesto(${item.idUnico})"><i class="fa-solid fa-circle-xmark"></i></button></td></tr>`;
-        });
-
-        const iva = subtotal * 0.19;
-        const total = subtotal + iva;
-
-        document.getElementById('total-subtotal').innerText = formatearMoneda(subtotal);
-        document.getElementById('total-iva').innerText = formatearMoneda(iva);
-        document.getElementById('total-general').innerText = formatearMoneda(total);
-    }
-
-    function limpiarPresupuestoActual() {
-        if(confirm('¿Deseas vaciar el presupuesto actual en pantalla?')) {
-            articulosPresupuesto = [];
-            deseleccionarCliente();
-            renderizarTablaPresupuesto();
-        }
-    }
-</script>
-</body>
-</html>
+                            <input type="
